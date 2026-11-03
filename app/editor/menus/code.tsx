@@ -21,9 +21,7 @@ import { metaDisplay } from "@shared/utils/keyboard";
  * @param ctx - the current selection context.
  * @returns an array of menu items.
  */
-export default function codeMenuItems(
-  ctx: SelectionContext
-): MenuItem[] {
+export default function codeMenuItems(ctx: SelectionContext): MenuItem[] {
   const { state, readOnly } = ctx;
   const node =
     state.selection instanceof NodeSelection
@@ -39,7 +37,8 @@ export default function codeMenuItems(
 
   const remainingLangMenuItems = Object.entries(codeLanguages)
     .filter(
-      ([value]) =>
+      ([value, item]) =>
+        !item.alias &&
         !frequentLanguages.includes(value as keyof typeof codeLanguages)
     )
     .map(([value, item]) => langToMenuItem({ node, value, label: item.label }));
@@ -109,7 +108,7 @@ const langToMenuItem = ({
 }): MenuItem => ({
   name: "code_block",
   label,
-  active: () => node.attrs.language === value,
+  active: () => (node.attrs.language ?? "none") === value,
   attrs: {
     language: value,
   },

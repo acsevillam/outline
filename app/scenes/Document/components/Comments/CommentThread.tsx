@@ -5,7 +5,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import scrollIntoView from "scroll-into-view-if-needed";
 import styled, { css } from "styled-components";
-import breakpoint from "styled-components-breakpoint";
+import { breakpoint } from "@shared/styles/breakpoint";
 import { s, hover } from "@shared/styles";
 import type { ProsemirrorData } from "@shared/types";
 import { ProsemirrorHelper } from "@shared/utils/ProsemirrorHelper";
@@ -25,6 +25,7 @@ import useCurrentUser from "~/hooks/useCurrentUser";
 import { sidebarAppearDuration } from "~/styles/animations";
 import CommentForm from "./CommentForm";
 import CommentThreadItem from "./CommentThreadItem";
+import { EditorStyleHelper } from "@shared/editor/styles/EditorStyleHelper";
 
 type Props = {
   /** The document that this comment thread belongs to */
@@ -56,7 +57,6 @@ function CommentThread({
   const { editor, setFocusedCommentId } = useDocumentContext();
   const { comments } = useStores();
   const topRef = React.useRef<HTMLDivElement>(null);
-  const replyRef = React.useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const [autoFocus, setAutoFocusOn, setAutoFocusOff] = useBoolean(thread.isNew);
   const user = useCurrentUser();
@@ -75,10 +75,11 @@ function CommentThread({
 
   const canReply = can.comment && !thread.isResolved;
 
-  const highlightedText = ProsemirrorHelper.getAnchorTextForComment(
-    editor?.getComments() ?? [],
-    thread.id
-  );
+  const highlightedText =
+    ProsemirrorHelper.getAnchorTextForComment(
+      editor?.getComments() ?? [],
+      thread.id
+    ) ?? thread.pendingAnchor?.anchorText;
 
   const commentsInThread = comments
     .inThread(thread.id)
@@ -104,6 +105,7 @@ function CommentThread({
       // click handler, so skip deselecting here to avoid a flash of the
       // deselected state (and the new comment form) in between.
       !target.closest("[data-comment-thread]") &&
+      !target.closest("." + EditorStyleHelper.commentGutter) &&
       event.defaultPrevented === false
     ) {
       setFocusedCommentId(null);
@@ -193,13 +195,14 @@ function CommentThread({
         }, sidebarAppearDuration);
       } else {
         setTimeout(() => {
-          if (!replyRef.current) {
+          if (!topRef.current) {
             return;
           }
-          scrollIntoView(replyRef.current, {
+          // Scroll the whole into view when its mark is clicked
+          scrollIntoView(topRef.current, {
             scrollMode: "if-needed",
             behavior: "smooth",
-            block: "center",
+            block: "nearest",
             boundary: (parent) =>
               // Prevents body and other parent elements from being scrolled
               parent.id !== "comments",
@@ -213,6 +216,7 @@ function CommentThread({
 
       setTimeout(
         () => {
+          editor?.revealComment(thread.id);
           getCommentMarkElement()?.scrollIntoView({
             behavior: "smooth",
             block: "center",
@@ -221,7 +225,7 @@ function CommentThread({
         isMarkVisible ? 0 : sidebarAppearDuration
       );
     }
-  }, [focused, scrollOnMount, thread.id]);
+  }, [focused, scrollOnMount, thread.id, editor]);
 
   return (
     <Thread
@@ -278,7 +282,7 @@ function CommentThread({
           );
         })}
 
-        <ResizingHeightContainer hideOverflow={false} ref={replyRef}>
+        <ResizingHeightContainer hideOverflow={false}>
           {(focused || draft || commentsInThread.length === 0) && canReply && (
             <Fade timing={100}>
               <CommentForm

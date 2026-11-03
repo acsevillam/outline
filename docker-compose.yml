@@ -24,7 +24,7 @@ services:
   outline:
     profiles:
       - prod
-    image: ${OUTLINE_IMAGE:-ghcr.io/precisionlab-co/outline@sha256:0000000000000000000000000000000000000000000000000000000000000000}
+    image: ${OUTLINE_IMAGE:-ghcr.io/acsevillam/outline@sha256:0000000000000000000000000000000000000000000000000000000000000000}
     container_name: ${OUTLINE_CONTAINER_NAME:-papps-outline-app}
     restart: unless-stopped
     depends_on:
@@ -47,6 +47,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://outline-redis:6379}
       REDIS_COLLABORATION_URL: ${REDIS_COLLABORATION_URL:-}
       FILE_STORAGE: ${FILE_STORAGE:-s3}
+      FILE_STORAGE_LOCAL_ROOT_DIR: /var/lib/outline/data
       FILE_STORAGE_UPLOAD_MAX_SIZE: ${FILE_STORAGE_UPLOAD_MAX_SIZE:-262144000}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
@@ -85,12 +86,16 @@ services:
       ENABLE_UPDATES: ${ENABLE_UPDATES:-true}
       DEBUG: ${DEBUG:-http}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "127.0.0.1:${OUTLINE_LOCAL_PORT:-11000}:3000"
+    volumes:
+      - outline-data:/var/lib/outline/data
     expose:
       - "3000"
     networks:
       edge_proxy:
         aliases:
-          - outline-app
+          - ${OUTLINE_EDGE_ALIAS:-outline-app}
       outline_internal:
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/_health | grep -q OK"]
@@ -149,5 +154,6 @@ networks:
     internal: true
 
 volumes:
+  outline-data:
   postgres-data:
   redis-data:

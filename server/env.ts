@@ -1,5 +1,4 @@
 /* oxlint-disable no-console */
-// oxlint-disable-next-line import/order
 import environment from "./utils/environment";
 import os from "node:os";
 import wellKnownServices from "nodemailer/lib/well-known/services.json";
@@ -223,6 +222,17 @@ export class Environment {
   );
 
   /**
+   * The time in milliseconds that a redis connection can stay unavailable
+   * before the process exits, so that the process manager can restart it.
+   */
+  @IsNumber()
+  @Min(1000)
+  public REDIS_UNAVAILABLE_TIMEOUT = parseInt(
+    environment.REDIS_UNAVAILABLE_TIMEOUT || "300000",
+    10
+  );
+
+  /**
    * The fully qualified, external facing domain name of the server.
    * If not set, will be derived from HEROKU_APP_NAME for Heroku deployments.
    */
@@ -342,6 +352,7 @@ export class Environment {
 
   /**
    * A comma list of which services should be enabled on this instance – defaults to all.
+   * The "admin" service is only available in development.
    *
    * If a services flag is passed it takes priority over the environment variable
    * for example: --services=web,worker
@@ -654,7 +665,9 @@ export class Environment {
    * Example: https://d1a2b3c4d5e6f.cloudfront.net (no trailing slash)
    */
   @IsOptional()
-  public AWS_CLOUDFRONT_URL = this.toOptionalString(environment.AWS_CLOUDFRONT_URL);
+  public AWS_CLOUDFRONT_URL = this.toOptionalString(
+    environment.AWS_CLOUDFRONT_URL
+  );
 
   /**
    * CloudFront key pair ID for signed download URLs. Required together with a
@@ -704,6 +717,16 @@ export class Environment {
    */
   @IsOptional()
   public AWS_S3_ACL = environment.AWS_S3_ACL ?? "private";
+
+  /**
+   * Which HTTP method to use for presigned uploads to S3-compatible storage.
+   * "post" uses multipart form upload (traditional S3 presigned POST).
+   * "put" uses a single PUT request with a presigned URL (required for
+   * providers like Cloudflare R2 that do not support presigned POST).
+   */
+  @IsIn(["put", "post"])
+  public AWS_S3_UPLOAD_METHOD =
+    this.toOptionalString(environment.AWS_S3_UPLOAD_METHOD) ?? "post";
 
   /**
    * Which file storage system to use
@@ -921,6 +944,13 @@ export class Environment {
    */
   public get isTest() {
     return this.ENVIRONMENT === "test";
+  }
+
+  /**
+   * Returns the port that the Vite development server listens on.
+   */
+  public get vitePort() {
+    return this.PORT + 1;
   }
 
   protected toOptionalString(value: string | undefined) {

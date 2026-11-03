@@ -4,13 +4,9 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
 import styled, { useTheme } from "styled-components";
-import breakpoint from "styled-components-breakpoint";
+import { breakpoint } from "@shared/styles/breakpoint";
 import { s } from "@shared/styles";
-import {
-  isModKey,
-  metaDisplay,
-  shortcutSeparator,
-} from "@shared/utils/keyboard";
+import { metaDisplay, shortcutSeparator } from "@shared/utils/keyboard";
 import useBoolean from "~/hooks/useBoolean";
 import useKeyDown from "~/hooks/useKeyDown";
 import useMobile from "~/hooks/useMobile";
@@ -52,12 +48,16 @@ function InputSearchPage({
   const isMobile = useMobile();
   const [isFocused, setFocused, setUnfocused] = useBoolean(false);
 
-  useKeyDown("f", (ev: KeyboardEvent) => {
-    if (isModKey(ev) && document.activeElement !== inputRef.current) {
-      ev.preventDefault();
-      inputRef.current?.focus();
-    }
-  });
+  useKeyDown(
+    "f",
+    (ev: KeyboardEvent) => {
+      if (document.activeElement !== inputRef.current) {
+        ev.preventDefault();
+        inputRef.current?.focus();
+      }
+    },
+    { metaKey: true }
+  );
 
   const handleKeyDown = React.useCallback(
     (ev: React.KeyboardEvent<HTMLInputElement>) => {
@@ -122,6 +122,8 @@ const InputMaxWidth = styled(Input).attrs({ round: true })`
   /* On mobile the input grows to fill the header, so add a gap before the
    * adjacent action button (e.g. "New doc"). */
   ${breakpoint("mobile", "tablet")`
+    flex: 1;
+    min-width: 0;
     margin-inline-end: 8px;
   `}
 `;
@@ -129,6 +131,7 @@ const InputMaxWidth = styled(Input).attrs({ round: true })`
 const Shortcut = styled.span<{ $visible: boolean }>`
   flex-shrink: 0;
   font-size: 13px;
+  font-feature-settings: "cv08", "zero";
   color: ${s("textTertiary")};
   padding-inline: 0 10px;
   pointer-events: none;

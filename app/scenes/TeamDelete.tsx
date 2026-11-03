@@ -3,6 +3,7 @@ import * as React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation, Trans } from "react-i18next";
 import { toast } from "sonner";
+import { errToString } from "@shared/utils/error";
 import Button from "~/components/Button";
 import Flex from "~/components/Flex";
 import { OneTimePasswordInput } from "~/components/OneTimePasswordInput";
@@ -38,7 +39,7 @@ function TeamDelete({ onSubmit }: Props) {
         await auth.requestDeleteTeam();
         setWaitingCode(true);
       } catch (error) {
-        toast.error(error.message);
+        toast.error(errToString(error));
       }
     },
     [auth]
@@ -56,7 +57,7 @@ function TeamDelete({ onSubmit }: Props) {
         });
         onSubmit();
       } catch (error) {
-        toast.error(error.message);
+        toast.error(errToString(error));
       }
     },
     [auth, onSubmit]
@@ -101,11 +102,11 @@ function TeamDelete({ onSubmit }: Props) {
       ) : (
         <>
           <Text as="p" type="secondary">
-            <Trans>
-              Deleting the <strong>{{ workspaceName }}</strong> workspace will
-              destroy all collections, documents, users, and associated data.
-              You will be immediately logged out of {{ appName }}.
-            </Trans>
+            <Trans
+              defaults="Deleting the <1>{{workspaceName}}</1> workspace will destroy all collections, documents, users, and associated data. You will be immediately logged out of {{appName}}."
+              values={{ workspaceName, appName }}
+              components={{ 1: <strong /> }}
+            />
           </Text>
         </>
       )}

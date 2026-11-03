@@ -7,7 +7,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import styled, { css } from "styled-components";
-import breakpoint from "styled-components-breakpoint";
+import { breakpoint } from "@shared/styles/breakpoint";
 import EventBoundary from "@shared/components/EventBoundary";
 import { s, hover } from "@shared/styles";
 import type { ProsemirrorData } from "@shared/types";
@@ -24,11 +24,11 @@ import { ResizingHeightContainer } from "~/components/ResizingHeightContainer";
 import Text from "~/components/Text";
 import Time from "~/components/Time";
 import Tooltip from "~/components/Tooltip";
-import { resolveCommentFactory } from "~/actions/definitions/comments";
+import { resolveCommentActionFactory } from "~/actions/definitions/comments";
 import useBoolean from "~/hooks/useBoolean";
 import useCurrentUser from "~/hooks/useCurrentUser";
 import CommentMenu from "~/menus/CommentMenu";
-import lazyWithRetry from "~/utils/lazyWithRetry";
+import lazyWithRetry from "@shared/utils/lazyWithRetry";
 
 const CommentEditor = lazyWithRetry(() => import("./CommentEditor"));
 import { HighlightedText } from "./HighlightText";
@@ -317,10 +317,10 @@ const ResolveButton = ({
   const { t } = useTranslation();
 
   return (
-    <Tooltip content={t("Mark as resolved")} placement="top">
+    <Tooltip content={t("Mark as resolved")}>
       <Action
         as={NudeButton}
-        action={resolveCommentFactory({
+        action={resolveCommentActionFactory({
           comment,
           onResolve: () => onUpdate({ resolved: true }),
         })}
