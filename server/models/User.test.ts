@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { errToString } from "@shared/utils/error";
 import { CollectionPermission, UserRole } from "@shared/types";
 import { createContext } from "@server/context";
 import { Event } from "@server/models";
@@ -123,7 +124,7 @@ describe("user model", () => {
         error = err;
       }
 
-      expect(error && error.message).toContain("Cannot delete last user");
+      expect(errToString(error)).toContain("Cannot delete last user");
     });
 
     it("should prevent last admin from deleting account", async () => {
@@ -139,7 +140,7 @@ describe("user model", () => {
         error = err;
       }
 
-      expect(error && error.message).toContain("Cannot delete account");
+      expect(errToString(error)).toContain("Cannot delete account");
     });
 
     it("should not prevent multiple admin from deleting account", async () => {
@@ -226,6 +227,22 @@ describe("user model", () => {
       const response = await user.collectionIds();
       expect(response.length).toEqual(1);
       expect(response[0]).toEqual(collection.id);
+    });
+
+    it("should not return a cached response after a role change", async () => {
+      const team = await buildTeam();
+      const user = await buildGuestUser({
+        teamId: team.id,
+      });
+      const collection = await buildCollection({
+        teamId: team.id,
+        permission: CollectionPermission.ReadWrite,
+      });
+      expect(await user.collectionIds()).toEqual([]);
+
+      await user.update({ role: UserRole.Member });
+
+      expect(await user.collectionIds()).toEqual([collection.id]);
     });
 
     it("should not return private collections", async () => {

@@ -5,15 +5,18 @@ import Dropzone from "react-dropzone";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import styled from "styled-components";
-import { s } from "@shared/styles";
+import { errToString } from "@shared/utils/error";
 import {
   AttachmentPreset,
   CollectionPermission,
-  FileOperationFormat,
-  IntegrationService,
+  type ImportableIntegrationService,
 } from "@shared/types";
 import { bytesToHumanReadable } from "@shared/utils/files";
 import Button from "~/components/Button";
+import {
+  DropzoneContainer,
+  dropzoneIcon,
+} from "~/components/DropzoneContainer";
 import Flex from "~/components/Flex";
 import { InputSelectPermission } from "~/components/InputSelectPermission";
 import LoadingIndicator from "~/components/LoadingIndicator";
@@ -23,16 +26,17 @@ import { EmptySelectValue } from "~/types";
 import { uploadFile } from "~/utils/files";
 
 type Props = {
-  children: JSX.Element;
-  format?: string;
+  children: React.JSX.Element;
+  /** The importable service to create an import for. */
+  service: ImportableIntegrationService;
   disabled?: boolean;
   activeClassName?: string;
   onSubmit: () => void;
 };
 
-function DropToImport({ disabled, onSubmit, children, format }: Props) {
+function DropToImport({ disabled, onSubmit, children, service }: Props) {
   const { t } = useTranslation();
-  const { collections, imports } = useStores();
+  const { imports } = useStores();
   const [file, setFile] = useState<File | null>(null);
   const [isImporting, setImporting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -62,25 +66,13 @@ function DropToImport({ disabled, onSubmit, children, format }: Props) {
         onProgress: (progress) => setUploadProgress(progress),
       });
 
-      if (format === FileOperationFormat.MarkdownZip) {
-        await imports.create(
-          { service: IntegrationService.Markdown },
-          {
-            attachmentId: attachment.id,
-            permission: permission ?? undefined,
-          }
-        );
-      } else if (format === FileOperationFormat.JSON) {
-        await imports.create(
-          { service: IntegrationService.JSON },
-          {
-            attachmentId: attachment.id,
-            permission: permission ?? undefined,
-          }
-        );
-      } else {
-        await collections.import(attachment.id, { format, permission });
-      }
+      await imports.create(
+        { service },
+        {
+          attachmentId: attachment.id,
+          permission: permission ?? undefined,
+        }
+      );
 
       onSubmit();
       toast.message(file.name, {
@@ -89,7 +81,7 @@ function DropToImport({ disabled, onSubmit, children, format }: Props) {
         ),
       });
     } catch (err) {
-      toast.error(err.message);
+      toast.error(errToString(err));
     } finally {
       setImporting(false);
       setUploadProgress(0);
@@ -109,13 +101,13 @@ function DropToImport({ disabled, onSubmit, children, format }: Props) {
       {isImporting && <LoadingIndicator />}
       <Text as="p" type="secondary">
         <Dropzone
-          accept="application/zip, application/x-zip-compressed"
+          accept={zipAccept}
           onDropAccepted={handleFiles}
           onDropRejected={handleRejection}
           disabled={isImporting}
         >
           {({ getRootProps, getInputProps, isDragActive }) => (
-            <DropzoneContainer
+            <Container
               {...getRootProps()}
               $disabled={isImporting}
               $isDragActive={isDragActive}
@@ -128,7 +120,7 @@ function DropToImport({ disabled, onSubmit, children, format }: Props) {
                   ? t(`${file.name} (${bytesToHumanReadable(file.size)})`)
                   : children}
               </Flex>
-            </DropzoneContainer>
+            </Container>
           )}
         </Dropzone>
       </Text>
@@ -159,32 +151,17 @@ function DropToImport({ disabled, onSubmit, children, format }: Props) {
   );
 }
 
+const zipAccept = {
+  "application/zip": [],
+  "application/x-zip-compressed": [],
+};
+
 const Icon = styled(NewDocumentIcon)`
-  padding: 4px;
-  border-radius: 50%;
-  background: ${(props) => props.theme.brand.blue};
-  color: white;
+  ${dropzoneIcon}
 `;
 
-const DropzoneContainer = styled.div<{
-  $disabled: boolean;
-  $isDragActive: boolean;
-}>`
-  background: ${(props) =>
-    props.$isDragActive
-      ? props.theme.backgroundSecondary
-      : props.theme.background};
-  border-radius: 8px;
-  border: 1px dashed ${s("divider")};
+const Container = styled(DropzoneContainer)`
   padding: 52px;
-  text-align: center;
-  font-size: 15px;
-  cursor: var(--pointer);
-  opacity: ${(props) => (props.$disabled ? 0.5 : 1)};
-
-  &:hover {
-    background: ${s("backgroundSecondary")};
-  }
 `;
 
 export default observer(DropToImport);

@@ -1,16 +1,20 @@
 import type { PluginSimple } from "markdown-it";
 import type { InputRule } from "prosemirror-inputrules";
 import type { NodeType, MarkType, Schema } from "prosemirror-model";
-import type { Command, Plugin, Selection } from "prosemirror-state";
+import type { Command, Plugin } from "prosemirror-state";
 import type { Editor } from "../../../app/editor";
 import type { SelectionToolbarMenuDescriptor } from "../types";
 
 export type CommandFactory = (attrs?: unknown, options?: unknown) => Command;
 
+/** Props passed to the widget rendered by an extension. */
 export type WidgetProps = {
+  /** Whether the editor is displayed right-to-left */
   rtl: boolean;
+  /** Whether the editor is read-only */
   readOnly: boolean | undefined;
-  selection?: Selection;
+  /** Whether the editor currently holds focus */
+  isEditorFocused: boolean;
 };
 
 export default class Extension<TOptions extends object = object> {
@@ -55,6 +59,15 @@ export default class Extension<TOptions extends object = object> {
    */
   get allowInReadOnly(): boolean {
     return false;
+  }
+
+  /**
+   * Whether a node's React component may be used to render it when generating static HTML on the
+   * server. When false, the node renders from its `toDOM` spec instead — set this when the
+   * component depends on browser behavior or app context unavailable outside the editor.
+   */
+  get allowComponentInStaticHTML(): boolean {
+    return true;
   }
 
   get focusAfterExecution(): boolean {
