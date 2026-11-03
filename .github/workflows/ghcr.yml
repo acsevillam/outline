@@ -12,8 +12,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: precisionlab-co/outline
-  BASE_IMAGE_NAME: precisionlab-co/outline-base
+  IMAGE_NAME: ${{ github.repository }}
+  BASE_IMAGE_NAME: ${{ github.repository }}-base
 
 jobs:
   publish:
